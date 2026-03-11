@@ -1,0 +1,94 @@
+const db = require('../config/db')
+
+const getProfileSummary = async (req, res) => {
+  try {
+    const { userId } = req.params
+
+    const [users] = await db.query(
+      'SELECT id, username, email, created_at FROM users WHERE id = ?',
+      [userId]
+    )
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        message: 'User not found'
+      })
+    }
+
+    const user = users[0]
+
+    const [statsRows] = await db.query(
+      `
+      SELECT
+        COUNT(*) AS totalPlays,
+        COUNT(DISTINCT game_id) AS playedGames,
+        COALESCE(MAX(score), 0) AS highestScore
+      FROM scores
+      WHERE user_id = ?
+      `,
+      [userId]
+    )
+
+    const stats = statsRows[0] || {
+      totalPlays: 0,
+      playedGames: 0,
+      highestScore: 0
+    }
+
+    const [bestRecords] = await db.query(
+      `
+      SELECT
+        g.id AS game_id,
+        g.name AS game_name,
+        g.slug,
+        MAX(s.score) AS best_score
+      FROM games g
+      LEFT JOIN scores s
+        ON g.id = s.game_id
+        AND s.user_id = ?
+      GROUP BY g.id, g.name, g.slug
+      ORDER BY g.id ASC
+      `,
+      [userId]
+    )
+
+    const [recentHistory] = await db.query(
+      `
+      SELECT
+        s.id,
+        s.score,
+        s.created_at,
+        g.name AS game_name,
+        g.slug
+      FROM scores s
+      JOIN games g ON s.game_id = g.id
+      WHERE s.user_id = ?
+      ORDER BY s.created_at DESC
+      LIMIT 10
+      `,
+      [userId]
+    )
+
+    res.json({
+      user,
+      stats: {
+        totalPlays: Number(stats.totalPlays || 0),
+        playedGames: Number(stats.playedGames || 0),
+        highestScore: Number(stats.highestScore || 0),
+        bestRank: '-'
+      },
+      bestRecords,
+      recentHistory
+    })
+  } catch (error) {
+    console.error('Get profile summary error:', error)
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message
+    })
+  }
+}
+
+module.exports = {
+  getProfileSummary
+}
