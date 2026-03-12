@@ -30,8 +30,12 @@
           </div>
 
           <div class="game-actions">
-            <router-link :to="`/games/${game.slug}`" class="play-btn">開始遊戲</router-link>
-            <router-link to="/leaderboard" class="rank-btn">查看排行榜</router-link>
+            <router-link :to="`/games/${game.slug}`" class="play-btn">
+              開始遊戲
+            </router-link>
+            <router-link to="/leaderboard" class="rank-btn">
+              查看排行榜
+            </router-link>
           </div>
         </div>
       </div>
@@ -40,57 +44,13 @@
 </template>
 
 <script>
+import { games } from "../data/games"
+
 export default {
   name: "Game",
   data() {
     return {
-      games: [
-        {
-          id: 1,
-          slug: "catch-items",
-          name: "接物品",
-          category: "動作反應",
-          type: "接取挑戰",
-          difficulty: "簡單",
-          description: "控制角色接住掉落物品，考驗反應與判斷能力。"
-        },
-        {
-          id: 2,
-          slug: "reaction-test",
-          name: "反應速度測試",
-          category: "速度挑戰",
-          type: "反應測驗",
-          difficulty: "簡單",
-          description: "在最短時間內做出反應，挑戰你的手速極限。"
-        },
-        {
-          id: 3,
-          slug: "bee-shooter",
-          name: "小蜜蜂",
-          category: "射擊街機",
-          type: "飛行射擊",
-          difficulty: "中等",
-          description: "操作飛船閃避敵人並擊敗對手，取得更高分數。"
-        },
-        {
-          id: 4,
-          slug: "snake",
-          name: "貪食蛇",
-          category: "經典街機",
-          type: "生存成長",
-          difficulty: "中等",
-          description: "控制蛇持續成長，同時避免撞牆與撞到自己。"
-        },
-        {
-          id: 5,
-          slug: "wordle",
-          name: "Wordle",
-          category: "益智猜字",
-          type: "文字推理",
-          difficulty: "中等",
-          description: "在有限次數內猜出正確單字，挑戰你的字彙能力。"
-        }
-      ]
+      games
     }
   }
 }

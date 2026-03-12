@@ -35,24 +35,40 @@ const getProfileSummary = async (req, res) => {
       highestScore: 0
     }
 
-    const [bestRecords] = await db.query(
+    const [bestRecordsRows] = await db.query(
       `
       SELECT
         g.id AS game_id,
         g.name AS game_name,
         g.slug,
-        MAX(s.score) AS best_score
+        user_best.best_score,
+        CASE
+          WHEN user_best.best_score IS NULL THEN NULL
+          ELSE (
+            SELECT COUNT(*) + 1
+            FROM (
+              SELECT user_id, game_id, MAX(score) AS best_score
+              FROM scores
+              GROUP BY user_id, game_id
+            ) AS ranking_scores
+            WHERE ranking_scores.game_id = g.id
+              AND ranking_scores.best_score > user_best.best_score
+          )
+        END AS best_rank
       FROM games g
-      LEFT JOIN scores s
-        ON g.id = s.game_id
-        AND s.user_id = ?
-      GROUP BY g.id, g.name, g.slug
+      LEFT JOIN (
+        SELECT game_id, MAX(score) AS best_score
+        FROM scores
+        WHERE user_id = ?
+        GROUP BY game_id
+      ) AS user_best
+        ON g.id = user_best.game_id
       ORDER BY g.id ASC
       `,
       [userId]
     )
 
-    const [recentHistory] = await db.query(
+    const [recentHistoryRows] = await db.query(
       `
       SELECT
         s.id,
@@ -69,13 +85,30 @@ const getProfileSummary = async (req, res) => {
       [userId]
     )
 
+    const bestRecords = bestRecordsRows.map(record => ({
+      ...record,
+      best_score: record.best_score === null ? 0 : Number(record.best_score),
+      best_rank: record.best_rank === null ? null : Number(record.best_rank)
+    }))
+
+    const validRanks = bestRecords
+      .filter(record => record.best_rank !== null)
+      .map(record => record.best_rank)
+
+    const bestRank = validRanks.length > 0 ? Math.min(...validRanks) : '-'
+
+    const recentHistory = recentHistoryRows.map(record => ({
+      ...record,
+      score: Number(record.score || 0)
+    }))
+
     res.json({
       user,
       stats: {
         totalPlays: Number(stats.totalPlays || 0),
         playedGames: Number(stats.playedGames || 0),
         highestScore: Number(stats.highestScore || 0),
-        bestRank: '-'
+        bestRank
       },
       bestRecords,
       recentHistory

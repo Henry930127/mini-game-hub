@@ -41,7 +41,7 @@
             <tr>
               <th>排名</th>
               <th>玩家</th>
-              <th>分數</th>
+              <th>{{ scoreColumnLabel }}</th>
               <th>日期</th>
             </tr>
           </thead>
@@ -52,7 +52,7 @@
             >
               <td>{{ index + 1 }}</td>
               <td>{{ player.username }}</td>
-              <td>{{ player.score }}</td>
+              <td>{{ displayScore(player.score) }}</td>
               <td>{{ formatDate(player.created_at) }}</td>
             </tr>
           </tbody>
@@ -64,47 +64,17 @@
 
 <script>
 import { fetchLeaderboard } from "../api/leaderboard"
+import { games } from "../data/games"
 
 export default {
   name: "Leaderboard",
   data() {
     return {
-      selectedGameId: 2,
+      selectedGameId: 1,
       loading: false,
       errorMessage: "",
       rankingMap: {},
-      games: [
-        {
-          id: 2,
-          slug: "catch-items",
-          name: "接物品",
-          description: "控制角色接住掉落物品，考驗反應與判斷能力。"
-        },
-        {
-          id: 1,
-          slug: "reaction-test",
-          name: "反應速度測試",
-          description: "在最短時間內做出反應，挑戰你的手速極限。"
-        },
-        {
-          id: 4,
-          slug: "bee-shooter",
-          name: "小蜜蜂",
-          description: "操作飛船閃避敵人並擊敗對手，取得更高分數。"
-        },
-        {
-          id: 3,
-          slug: "snake",
-          name: "貪食蛇",
-          description: "控制蛇持續成長，同時避免撞牆與撞到自己。"
-        },
-        {
-          id: 5,
-          slug: "wordle",
-          name: "Wordle",
-          description: "在有限次數內猜出正確單字，挑戰你的字彙能力。"
-        }
-      ]
+      games
     }
   },
   computed: {
@@ -113,6 +83,9 @@ export default {
     },
     currentRanking() {
       return this.rankingMap[this.selectedGameId] || []
+    },
+    scoreColumnLabel() {
+      return this.currentGame?.slug === "reaction-test" ? "反應時間" : "分數"
     }
   },
   methods: {
@@ -155,6 +128,13 @@ export default {
         month: "2-digit",
         day: "2-digit"
       })
+    },
+
+    displayScore(score) {
+      if (this.currentGame?.slug === "reaction-test") {
+        return `${1000 - score} ms`
+      }
+      return score
     }
   },
   async mounted() {

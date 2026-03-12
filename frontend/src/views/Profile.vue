@@ -39,21 +39,49 @@
               </div>
               <div class="stat-box">
                 <span class="stat-label">最佳排名</span>
-                <span class="stat-value">{{ profile.stats.bestRank }}</span>
+                <span class="stat-value">
+                  {{
+                    profile.stats.bestRank === "-" || profile.stats.bestRank === null
+                      ? "-"
+                      : `#${profile.stats.bestRank}`
+                  }}
+                </span>
               </div>
             </div>
           </div>
 
           <div class="profile-card">
             <h2>最佳成績</h2>
-            <div class="record-list">
+
+            <div v-if="formattedBestRecords.length === 0" class="empty-text">
+              目前還沒有最佳成績資料
+            </div>
+
+            <div v-else class="record-list">
               <div
                 class="record-item"
                 v-for="record in formattedBestRecords"
                 :key="record.game_id"
               >
-                <span>{{ record.game_name }}</span>
-                <strong>{{ record.displayScore }}</strong>
+                <div class="record-left">
+                  <span class="record-game-name">{{ record.game_name }}</span>
+                </div>
+
+                <div class="record-right">
+                  <strong
+                    class="record-score"
+                    :class="{ muted: record.isNotPlayed }"
+                  >
+                    {{ record.displayScore }}
+                  </strong>
+
+                  <span
+                    v-if="record.best_rank !== null"
+                    class="record-rank"
+                  >
+                    #{{ record.best_rank }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -128,9 +156,12 @@ export default {
 
     formattedBestRecords() {
       return this.profile.bestRecords.map((record) => {
-        if (record.best_score === null || record.best_score === undefined) {
+        const hasPlayed = record.best_score !== null && Number(record.best_score) > 0
+
+        if (!hasPlayed) {
           return {
             ...record,
+            isNotPlayed: true,
             displayScore: "尚未遊玩"
           }
         }
@@ -139,12 +170,14 @@ export default {
           const reactionTime = Math.max(0, 1000 - Number(record.best_score))
           return {
             ...record,
+            isNotPlayed: false,
             displayScore: `${reactionTime} ms`
           }
         }
 
         return {
           ...record,
+          isNotPlayed: false,
           displayScore: `${record.best_score} 分`
         }
       })
@@ -153,17 +186,22 @@ export default {
     formattedRecentHistory() {
       return this.profile.recentHistory.map((history) => {
         let displayScore = `${history.score} 分`
+        let resultText = "已完成"
 
         if (history.slug === "reaction-test") {
           const reactionTime = Math.max(0, 1000 - Number(history.score))
           displayScore = `${reactionTime} ms`
         }
 
+        if (history.slug === "wordle") {
+          resultText = Number(history.score) > 0 ? "猜中成功" : "挑戰失敗"
+        }
+
         return {
           ...history,
           date: this.formatDate(history.created_at),
           displayScore,
-          resultText: "一般紀錄"
+          resultText
         }
       })
     }
@@ -268,6 +306,7 @@ export default {
   align-items: center;
   font-size: 30px;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .user-info h1 {
@@ -330,11 +369,47 @@ export default {
 .record-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 14px;
   padding: 12px 14px;
   background-color: #f9fafb;
   border-radius: 10px;
   color: #374151;
+}
+
+.record-left {
+  min-width: 0;
+}
+
+.record-game-name {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.record-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.record-score {
+  color: #111827;
+}
+
+.record-score.muted {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.record-rank {
+  display: inline-block;
+  font-size: 12px;
+  background-color: #eef2ff;
+  color: #4338ca;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 700;
 }
 
 .full-width {
@@ -386,6 +461,22 @@ export default {
 
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .record-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .record-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .history-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 }
 </style>
