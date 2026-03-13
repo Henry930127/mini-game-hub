@@ -15,7 +15,12 @@
           <div class="user-info">
             <h1>{{ profile.user.username }}</h1>
             <p>{{ profile.user.email }}</p>
-            <span class="member-badge">一般會員</span>
+            <span
+              class="member-badge"
+              :class="{ admin: profile.user.role === 'admin' }"
+            >
+              {{ memberRoleText }}
+            </span>
           </div>
         </div>
       </section>
@@ -134,7 +139,8 @@ export default {
         user: {
           id: null,
           username: "",
-          email: ""
+          email: "",
+          role: "player"
         },
         stats: {
           totalPlays: 0,
@@ -152,6 +158,10 @@ export default {
       return this.profile.user.username
         ? this.profile.user.username.charAt(0).toUpperCase()
         : "U"
+    },
+
+    memberRoleText() {
+      return this.profile.user.role === "admin" ? "管理員" : "一般會員"
     },
 
     formattedBestRecords() {
@@ -327,6 +337,11 @@ export default {
   border-radius: 999px;
   font-size: 13px;
   font-weight: bold;
+}
+
+.member-badge.admin {
+  background-color: #fee2e2;
+  color: #b91c1c;
 }
 
 .profile-card h2 {

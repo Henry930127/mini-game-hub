@@ -5,7 +5,7 @@ const getProfileSummary = async (req, res) => {
     const { userId } = req.params
 
     const [users] = await db.query(
-      'SELECT id, username, email, created_at FROM users WHERE id = ?',
+      'SELECT id, username, email, role, created_at FROM users WHERE id = ?',
       [userId]
     )
 

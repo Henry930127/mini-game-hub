@@ -6,12 +6,12 @@
 
       <form class="admin-login-form" @submit.prevent="handleLogin">
         <div class="form-group">
-          <label for="username">帳號</label>
+          <label for="email">Email</label>
           <input
-            id="username"
-            v-model="form.username"
-            type="text"
-            placeholder="請輸入管理員帳號"
+            id="email"
+            v-model="form.email"
+            type="email"
+            placeholder="請輸入管理員 Email"
           />
         </div>
 
@@ -38,6 +38,10 @@
 </template>
 
 <script>
+import axios from "axios"
+
+const API_BASE = "http://localhost:5000/api"
+
 export default {
   name: "AdminLogin",
   data() {
@@ -45,15 +49,15 @@ export default {
       loading: false,
       errorMessage: "",
       form: {
-        username: "",
+        email: "",
         password: ""
       }
     }
   },
   methods: {
     async handleLogin() {
-      if (!this.form.username || !this.form.password) {
-        this.errorMessage = "請輸入帳號與密碼"
+      if (!this.form.email || !this.form.password) {
+        this.errorMessage = "請輸入 Email 與密碼"
         return
       }
 
@@ -61,23 +65,27 @@ export default {
       this.errorMessage = ""
 
       try {
-        // 暫時先做前端假登入，之後再串真正 admin API
-        if (this.form.username === "admin" && this.form.password === "123456") {
-          localStorage.setItem(
-            "adminUser",
-            JSON.stringify({
-              username: "admin",
-              role: "admin"
-            })
-          )
+        const response = await axios.post(`${API_BASE}/auth/login`, {
+          email: this.form.email,
+          password: this.form.password
+        })
 
-          this.$router.push("/admin")
-        } else {
-          this.errorMessage = "帳號或密碼錯誤"
+        const { token, user } = response.data
+
+        if (!user || user.role !== "admin") {
+          this.errorMessage = "此帳號不是管理員，無法登入後台"
+          return
         }
+
+        localStorage.setItem("token", token)
+        localStorage.setItem("user", JSON.stringify(user))
+        localStorage.setItem("adminUser", JSON.stringify(user))
+
+        this.$router.push("/admin")
       } catch (error) {
         console.error("Admin login failed:", error)
-        this.errorMessage = "登入失敗，請稍後再試"
+        this.errorMessage =
+          error.response?.data?.message || "登入失敗，請稍後再試"
       } finally {
         this.loading = false
       }

@@ -2,6 +2,10 @@ const express = require('express')
 const router = express.Router()
 const db = require('../config/db')
 const { getDashboardSummary } = require('../controllers/adminController')
+const { authenticateToken, requireAdmin } = require('../middleware/authMiddleware')
+
+router.use(authenticateToken)
+router.use(requireAdmin)
 
 router.get('/dashboard', getDashboardSummary)
 
@@ -131,28 +135,38 @@ router.put('/games/:id', async (req, res) => {
 router.get('/announcements', async (req, res) => {
   try {
     const [announcements] = await db.query(`
-      SELECT *
-      FROM announcements
-      ORDER BY created_at DESC
+      SELECT
+        a.*,
+        creator.username AS created_by_name,
+        updater.username AS updated_by_name
+      FROM announcements a
+      LEFT JOIN users creator ON a.created_by = creator.id
+      LEFT JOIN users updater ON a.updated_by = updater.id
+      ORDER BY a.created_at DESC
     `)
 
-    res.json({ announcements })
+    res.json({
+      announcements
+    })
   } catch (error) {
     console.error('Fetch announcements error:', error)
-    res.status(500).json({ error: 'failed to fetch announcements' })
+    res.status(500).json({
+      error: 'failed to fetch announcements'
+    })
   }
 })
 
 router.post('/announcements', async (req, res) => {
   try {
     const { title, content, is_active } = req.body
+    const adminId = req.user.id
 
     const [result] = await db.query(
       `
-      INSERT INTO announcements (title, content, is_active)
-      VALUES (?, ?, ?)
+      INSERT INTO announcements (title, content, is_active, created_by, updated_by)
+      VALUES (?, ?, ?, ?, ?)
       `,
-      [title, content, is_active ? 1 : 0]
+      [title, content, is_active ? 1 : 0, adminId, adminId]
     )
 
     res.json({
@@ -171,6 +185,7 @@ router.put('/announcements/:id', async (req, res) => {
   try {
     const { id } = req.params
     const { title, content, is_active } = req.body
+    const adminId = req.user.id
 
     const [result] = await db.query(
       `
@@ -178,10 +193,11 @@ router.put('/announcements/:id', async (req, res) => {
       SET
         title = ?,
         content = ?,
-        is_active = ?
+        is_active = ?,
+        updated_by = ?
       WHERE id = ?
       `,
-      [title, content, is_active ? 1 : 0, id]
+      [title, content, is_active ? 1 : 0, adminId, id]
     )
 
     if (result.affectedRows === 0) {

@@ -6,19 +6,13 @@ const register = async (req, res) => {
   try {
     const { username, email, password } = req.body
 
-    if (!username || !email || !password) {
-      return res.status(400).json({
-        message: 'Please provide username, email and password'
-      })
-    }
-
     const [existingUsers] = await db.query(
-      'SELECT * FROM users WHERE email = ? OR username = ?',
+      'SELECT id FROM users WHERE email = ? OR username = ?',
       [email, username]
     )
 
     if (existingUsers.length > 0) {
-      return res.status(409).json({
+      return res.status(400).json({
         message: 'Username or email already exists'
       })
     }
@@ -26,15 +20,25 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     const [result] = await db.query(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-      [username, email, hashedPassword]
+      `
+      INSERT INTO users (username, email, password, role)
+      VALUES (?, ?, ?, ?)
+      `,
+      [username, email, hashedPassword, 'player']
     )
+
+    const [users] = await db.query(
+      'SELECT id, username, email, role, created_at FROM users WHERE id = ?',
+      [result.insertId]
+    )
+
+    const user = users[0]
 
     const token = jwt.sign(
       {
-        id: result.insertId,
-        username,
-        email
+        id: user.id,
+        username: user.username,
+        role: user.role
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -43,11 +47,7 @@ const register = async (req, res) => {
     res.status(201).json({
       message: 'Register successful',
       token,
-      user: {
-        id: result.insertId,
-        username,
-        email
-      }
+      user
     })
   } catch (error) {
     console.error('Register error:', error)
@@ -62,14 +62,12 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body
 
-    if (!email || !password) {
-      return res.status(400).json({
-        message: 'Please provide email and password'
-      })
-    }
-
     const [users] = await db.query(
-      'SELECT * FROM users WHERE email = ?',
+      `
+      SELECT id, username, email, password, role, created_at
+      FROM users
+      WHERE email = ?
+      `,
       [email]
     )
 
@@ -81,9 +79,9 @@ const login = async (req, res) => {
 
     const user = users[0]
 
-    const isMatch = await bcrypt.compare(password, user.password)
+    const isPasswordValid = await bcrypt.compare(password, user.password)
 
-    if (!isMatch) {
+    if (!isPasswordValid) {
       return res.status(401).json({
         message: 'Invalid email or password'
       })
@@ -93,19 +91,21 @@ const login = async (req, res) => {
       {
         id: user.id,
         username: user.username,
-        email: user.email
+        role: user.role
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
 
-    res.status(200).json({
+    res.json({
       message: 'Login successful',
       token,
       user: {
         id: user.id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        role: user.role,
+        created_at: user.created_at
       }
     })
   } catch (error) {
