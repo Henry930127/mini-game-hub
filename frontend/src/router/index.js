@@ -7,6 +7,8 @@ import Leaderboard from "../views/Leaderboard.vue"
 import Login from "../views/Login.vue"
 import Register from "../views/Register.vue"
 import Profile from "../views/Profile.vue"
+import AdminLogin from "../views/AdminLogin.vue"
+import AdminDashboard from "../views/AdminDashboard.vue"
 
 const routes = [
   {
@@ -46,6 +48,51 @@ const routes = [
     meta: {
       requiresAuth: true
     }
+  },
+  {
+    path: "/admin/login",
+    name: "admin-login",
+    component: AdminLogin
+  },
+  {
+    path: "/admin",
+    name: "admin-dashboard",
+    component: AdminDashboard,
+    meta: {
+      requiresAdmin: true
+    }
+  },
+  {
+    path: "/admin/users",
+    name: "admin-users",
+    component: () => import("../views/admin/AdminUsers.vue"),
+    meta: {
+      requiresAdmin: true
+    }
+  },
+  {
+    path: "/admin/scores",
+    name: "admin-scores",
+    component: () => import("../views/admin/AdminScores.vue"),
+    meta: {
+      requiresAdmin: true
+    }
+  },
+  {
+    path: "/admin/games",
+    name: "admin-games",
+    component: () => import("../views/admin/AdminGames.vue"),
+    meta: {
+      requiresAdmin: true
+    }
+  },
+  {
+    path: "/admin/announcements",
+    name: "admin-announcements",
+    component: () => import("../views/admin/AdminAnnouncements.vue"),
+    meta: {
+      requiresAdmin: true
+    }
   }
 ]
 
@@ -56,11 +103,19 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem("token")
+  const adminUser = localStorage.getItem("adminUser")
+
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
 
   if (requiresAuth && !token) {
-  next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
-  return
+    next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
+    return
+  }
+
+  if (requiresAdmin && !adminUser) {
+    next("/admin/login")
+    return
   }
 
   next()

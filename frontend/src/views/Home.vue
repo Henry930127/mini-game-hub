@@ -25,8 +25,8 @@
           :key="game.id"
           class="game-card"
         >
-          <h3>{{ game.name }}</h3>
-          <p>{{ game.description }}</p>
+          <h3>{{ game.display_name || game.name }}</h3>
+          <p>{{ game.short_description || game.description }}</p>
           <div class="card-actions">
             <router-link :to="`/games/${game.slug}`" class="card-btn">
               前往遊玩
@@ -44,20 +44,27 @@
         <h2>最新公告</h2>
       </div>
 
-      <div class="notice-list">
-        <div class="notice-item">
-          <h3>平台正式上線</h3>
-          <p>歡迎來到 Mini Game Hub，現在可以開始體驗多款小遊戲。</p>
-        </div>
+      <div v-if="loadingAnnouncements" class="notice-status">
+        載入公告中...
+      </div>
 
-        <div class="notice-item">
-          <h3>排行榜功能啟用</h3>
-          <p>每款遊戲都有各自的排行榜，快來挑戰更高名次。</p>
-        </div>
+      <div v-else-if="activeAnnouncements.length === 0" class="notice-status">
+        目前沒有最新公告
+      </div>
 
-        <div class="notice-item">
-          <h3>會員系統已啟用</h3>
-          <p>現在可以註冊、登入，並記錄自己的遊戲分數與排行。</p>
+      <div v-else class="notice-list">
+        <div
+          v-for="notice in activeAnnouncements"
+          :key="notice.id"
+          class="notice-item"
+        >
+          <div class="notice-top">
+            <h3>{{ notice.title }}</h3>
+            <span class="notice-date">
+              {{ formatDate(notice.created_at) }}
+            </span>
+          </div>
+          <p>{{ notice.content }}</p>
         </div>
       </div>
     </section>
@@ -71,9 +78,9 @@
       <div class="leaderboard-card">
         <div class="leaderboard-top">
           <div>
-            <span class="game-badge">{{ currentLeaderboardGame.name }}</span>
+            <span class="game-badge">{{ currentLeaderboardGame.display_name || currentLeaderboardGame.name }}</span>
             <p class="leaderboard-desc">
-              {{ currentLeaderboardGame.description }}
+              {{ currentLeaderboardGame.leaderboard_description || currentLeaderboardGame.description }}
             </p>
           </div>
 
@@ -106,7 +113,7 @@
             >
               <td>{{ index + 1 }}</td>
               <td>{{ player.username }}</td>
-              <td>{{ player.score }}</td>
+              <td>{{ displayScore(currentLeaderboardGame.slug, player.score) }}</td>
             </tr>
           </tbody>
         </table>
@@ -131,6 +138,9 @@
 
 <script>
 import { fetchLeaderboard } from "../api/leaderboard"
+import { fetchAnnouncements } from "../api/announcement"
+import { fetchAllGames } from "../api/game"
+import { games as localGames } from "../data/games"
 
 export default {
   name: "Home",
@@ -141,94 +151,82 @@ export default {
       loadingLeaderboard: false,
       leaderboardError: "",
       leaderboardMap: {},
-      games: [
-        {
-          id: 2,
-          slug: "catch-items",
-          name: "接物品",
-          description: "控制角色接住掉落物品，考驗反應與判斷能力。"
-        },
-        {
-          id: 1,
-          slug: "reaction-test",
-          name: "反應速度測試",
-          description: "在最短時間內做出反應，挑戰你的手速極限。"
-        },
-        {
-          id: 4,
-          slug: "bee-shooter",
-          name: "小蜜蜂",
-          description: "操作飛船閃避敵人並擊敗對手，取得更高分數。"
-        },
-        {
-          id: 3,
-          slug: "snake",
-          name: "貪食蛇",
-          description: "控制蛇持續成長，同時避免撞牆與撞到自己。"
-        },
-        {
-          id: 5,
-          slug: "wordle",
-          name: "Wordle",
-          description: "在有限次數內猜出正確單字，挑戰你的字彙能力。"
-        }
-      ],
-      leaderboardGames: [
-        {
-          id: 2,
-          slug: "catch-items",
-          name: "接物品",
-          description: "目前顯示的是接物品遊戲的前 3 名玩家紀錄。"
-        },
-        {
-          id: 1,
-          slug: "reaction-test",
-          name: "反應速度測試",
-          description: "目前顯示的是反應速度測試的前 3 名玩家紀錄。"
-        },
-        {
-          id: 4,
-          slug: "bee-shooter",
-          name: "小蜜蜂",
-          description: "目前顯示的是小蜜蜂的前 3 名玩家紀錄。"
-        },
-        {
-          id: 3,
-          slug: "snake",
-          name: "貪食蛇",
-          description: "目前顯示的是貪食蛇的前 3 名玩家紀錄。"
-        },
-        {
-          id: 5,
-          slug: "wordle",
-          name: "Wordle",
-          description: "目前顯示的是 Wordle 的前 3 名玩家紀錄。"
-        }
-      ]
+
+      loadingAnnouncements: false,
+      announcements: [],
+
+      games: localGames,
+      remoteGames: []
     }
   },
   computed: {
+    mergedGames() {
+      return this.games.map((localGame) => {
+        const remoteGame = this.remoteGames.find((item) => item.slug === localGame.slug)
+
+        return {
+          ...localGame,
+          ...(remoteGame || {}),
+          leaderboard_description:
+            remoteGame?.short_description ||
+            localGame.description
+        }
+      })
+    },
+
     featuredGames() {
-      return [this.games[0], this.games[1], this.games[4]]
+      return [
+        this.mergedGames.find((game) => game.slug === "catch-items"),
+        this.mergedGames.find((game) => game.slug === "reaction-test"),
+        this.mergedGames.find((game) => game.slug === "wordle")
+      ].filter(Boolean)
     },
+
+    leaderboardGames() {
+      return [
+        this.mergedGames.find((game) => game.slug === "catch-items"),
+        this.mergedGames.find((game) => game.slug === "reaction-test"),
+        this.mergedGames.find((game) => game.slug === "bee-shooter"),
+        this.mergedGames.find((game) => game.slug === "snake"),
+        this.mergedGames.find((game) => game.slug === "wordle")
+      ].filter(Boolean)
+    },
+
     currentLeaderboardGame() {
-      return this.leaderboardGames[this.currentGameIndex]
+      return this.leaderboardGames[this.currentGameIndex] || {}
     },
+
     currentRanking() {
       return this.leaderboardMap[this.currentLeaderboardGame.id] || []
+    },
+
+    activeAnnouncements() {
+      return this.announcements
+        .filter((item) => Number(item.is_active) === 1)
+        .slice(0, 3)
     }
   },
   methods: {
-    async loadLeaderboardByGameId(gameId) {
+    async loadAnnouncements() {
       try {
-        const ranking = await fetchLeaderboard(gameId)
-        this.leaderboardMap = {
-          ...this.leaderboardMap,
-          [gameId]: ranking
-        }
+        this.loadingAnnouncements = true
+        const data = await fetchAnnouncements()
+        this.announcements = data.announcements || []
       } catch (error) {
-        console.error(`Load leaderboard failed for game ${gameId}:`, error)
-        throw error
+        console.error("Load announcements failed:", error)
+        this.announcements = []
+      } finally {
+        this.loadingAnnouncements = false
+      }
+    },
+
+    async loadGames() {
+      try {
+        const data = await fetchAllGames()
+        this.remoteGames = data.games || []
+      } catch (error) {
+        console.error("Load games failed:", error)
+        this.remoteGames = []
       }
     },
 
@@ -247,6 +245,26 @@ export default {
       } finally {
         this.loadingLeaderboard = false
       }
+    },
+
+    displayScore(slug, score) {
+      if (slug === "reaction-test") {
+        return `${1000 - score} ms`
+      }
+      return score
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return "-"
+
+      const date = new Date(dateString)
+      if (Number.isNaN(date.getTime())) return "-"
+
+      return date.toLocaleString("zh-TW", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      })
     },
 
     nextGame() {
@@ -278,6 +296,8 @@ export default {
     }
   },
   async mounted() {
+    await this.loadGames()
+    await this.loadAnnouncements()
     await this.loadAllLeaderboards()
     this.startAutoPlay()
   },
@@ -447,6 +467,24 @@ export default {
   gap: 16px;
 }
 
+.notice-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.notice-date {
+  color: #9ca3af;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.notice-status {
+  color: #6b7280;
+}
+
 .leaderboard-top {
   display: flex;
   justify-content: space-between;
@@ -556,8 +594,13 @@ export default {
     gap: 8px;
   }
 
-  .leaderboard-top {
+  .leaderboard-top,
+  .notice-top {
     flex-direction: column;
+  }
+
+  .notice-date {
+    white-space: normal;
   }
 }
 </style>

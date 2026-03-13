@@ -3,8 +3,8 @@
     <section class="game-detail-header">
       <div class="header-left">
         <span class="game-tag">{{ game.category }}</span>
-        <h1>{{ game.name }}</h1>
-        <p>{{ game.description }}</p>
+        <h1>{{ game.display_name || game.name }}</h1>
+        <p>{{ game.short_description || game.description }}</p>
       </div>
 
       <div class="header-right">
@@ -40,7 +40,7 @@
 
         <template v-else>
           <div class="game-placeholder">
-            <p>這裡之後會放入「{{ game.name }}」的實際遊戲畫面。</p>
+            <p>這裡之後會放入「{{ game.display_name || game.name }}」的實際遊戲畫面。</p>
           </div>
           <button class="play-btn">開始遊戲</button>
         </template>
@@ -123,9 +123,30 @@
     <section class="instruction-section">
       <div class="instruction-card">
         <h2>操作說明</h2>
-        <ul>
-          <li v-for="(instruction, index) in game.instructions" :key="index">
+
+        <p v-if="instructionLines.length === 0" class="empty-text">
+          目前沒有操作提示
+        </p>
+
+        <ul v-else>
+          <li v-for="(instruction, index) in instructionLines" :key="index">
             {{ instruction }}
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="instruction-section">
+      <div class="instruction-card">
+        <h2>規則說明</h2>
+
+        <p v-if="ruleLines.length === 0" class="empty-text">
+          目前沒有規則說明
+        </p>
+
+        <ul v-else>
+          <li v-for="(rule, index) in ruleLines" :key="index">
+            {{ rule }}
           </li>
         </ul>
       </div>
@@ -142,7 +163,8 @@
 <script>
 import { fetchLeaderboard } from "../api/leaderboard"
 import { submitScore } from "../api/score"
-import { games } from "../data/games"
+import { fetchAllGames } from "../api/game"
+import { games as localGames } from "../data/games"
 
 import ReactionGame from "../components/games/ReactionGame.vue"
 import CatchItemsGame from "../components/games/CatchItemsGame.vue"
@@ -168,16 +190,66 @@ export default {
       submitScoreMessage: "",
       submitScoreMessageType: "success",
 
-      games
+      games: localGames,
+      remoteGames: [],
+      loadingGameInfo: false
     }
   },
   computed: {
+    currentSlug() {
+      return this.$route.params.slug
+    },
+
     game() {
-      const slug = this.$route.params.slug
-      return this.games.find((item) => item.slug === slug)
+      const localGame = this.games.find((item) => item.slug === this.currentSlug)
+      const remoteGame = this.remoteGames.find((item) => item.slug === this.currentSlug)
+
+      if (!localGame && !remoteGame) return null
+
+      return {
+        ...(localGame || {}),
+        ...(remoteGame || {})
+      }
+    },
+
+    instructionLines() {
+      if (!this.game?.instructions) {
+        return Array.isArray(this.game?.instructions) ? this.game.instructions : []
+      }
+
+      if (Array.isArray(this.game.instructions)) {
+        return this.game.instructions
+      }
+
+      return this.game.instructions
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+    },
+
+    ruleLines() {
+      if (!this.game?.rules_text) return []
+
+      return this.game.rules_text
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
     }
   },
   methods: {
+    async loadGameInfo() {
+      try {
+        this.loadingGameInfo = true
+        const data = await fetchAllGames()
+        this.remoteGames = data.games || []
+      } catch (error) {
+        console.error("Load game info failed:", error)
+        this.remoteGames = []
+      } finally {
+        this.loadingGameInfo = false
+      }
+    },
+
     async loadLeaderboard() {
       if (!this.game?.id) {
         this.leaderboard = []
@@ -270,13 +342,15 @@ export default {
     }
   },
   watch: {
-    "$route.params.slug"() {
+    currentSlug() {
       this.submitScoreMessage = ""
       this.submitScoreMessageType = "success"
+      this.loadGameInfo()
       this.loadLeaderboard()
     }
   },
-  mounted() {
+  async mounted() {
+    await this.loadGameInfo()
     this.loadLeaderboard()
   }
 }
@@ -489,6 +563,11 @@ export default {
   padding-left: 20px;
   color: #4b5563;
   line-height: 1.8;
+}
+
+.empty-text {
+  margin: 0;
+  color: #6b7280;
 }
 
 .not-found {

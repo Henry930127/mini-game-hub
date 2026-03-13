@@ -8,6 +8,8 @@ const scoreRoutes = require('./routes/scoreRoutes')
 const leaderboardRoutes = require('./routes/leaderboardRoutes')
 const profileRoutes = require('./routes/profileRoutes')
 
+const adminRoutes = require('./routes/adminRoutes')
+
 const app = express()
 
 app.use(cors())
@@ -33,6 +35,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/scores', scoreRoutes)
 app.use('/api/leaderboard', leaderboardRoutes)
 app.use('/api/profile', profileRoutes)
+app.use('/api/admin', adminRoutes)
 
 const PORT = process.env.PORT || 5000
 
