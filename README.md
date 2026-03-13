@@ -166,80 +166,84 @@ Mini Game Hub 是一個包含 **前台遊戲平台** 與 **後台管理系統** 
 
 ---
 
-# 🗄 資料庫設計
+## 🗄 資料庫設計
 
-## users
+系統主要包含以下四個核心資料表：
 
-儲存會員資料
+### users
+儲存所有登入使用者資料，並透過 `role` 欄位區分一般玩家與管理員。
 
 | 欄位 | 說明 |
-|-----|------|
-| id | 使用者ID |
+|------|------|
+| id | 使用者 ID |
 | username | 使用者名稱 |
-| email | 使用者Email |
-| password | 密碼 |
-| created_at | 註冊時間 |
+| email | Email |
+| password | 加密後密碼 |
+| role | 使用者角色（player / admin） |
+| created_at | 建立時間 |
 
 ---
 
-## games
-
-儲存遊戲資料
+### games
+儲存遊戲基本資料與前端顯示內容。
 
 | 欄位 | 說明 |
-|-----|------|
-| id | 遊戲ID |
-| name | 遊戲名稱 |
-| slug | 遊戲識別碼 |
-| description | 遊戲介紹 |
+|------|------|
+| id | 遊戲 ID |
+| name | 系統內部名稱 |
+| slug | 路由識別碼 |
+| description | 基本描述 |
 | display_name | 前端顯示名稱 |
-| short_description | 簡短描述 |
-| instructions | 操作說明 |
-| rules_text | 遊戲規則 |
+| short_description | 簡短介紹 |
+| instructions | 操作提示 |
+| rules_text | 規則說明 |
 
 ---
 
-## scores
-
-儲存玩家遊戲分數
+### scores
+記錄玩家在各遊戲中的分數資料。
 
 | 欄位 | 說明 |
-|-----|------|
-| id | 分數ID |
-| user_id | 玩家ID |
-| game_id | 遊戲ID |
+|------|------|
+| id | 分數紀錄 ID |
+| user_id | 玩家 ID（FK -> users.id） |
+| game_id | 遊戲 ID（FK -> games.id） |
 | score | 分數 |
-| created_at | 紀錄時間 |
+| created_at | 建立時間 |
 
 ---
 
-## announcements
-
-儲存平台公告
+### announcements
+儲存首頁公告與後台公告管理資料。
 
 | 欄位 | 說明 |
-|-----|------|
-| id | 公告ID |
+|------|------|
+| id | 公告 ID |
 | title | 公告標題 |
 | content | 公告內容 |
 | is_active | 是否啟用 |
+| created_by | 建立者（FK -> users.id） |
+| updated_by | 最後更新者（FK -> users.id） |
 | created_at | 建立時間 |
 | updated_at | 更新時間 |
-
 ---
 
-# 🔗 資料表關係
+## 🔗 資料表關係
 
-資料表關係如下：
-- users (1) ---- (N) scores (N) ---- (1) games
-- announcements (獨立表)
+本系統的主要資料表關係如下：
 
-說明：
+- `users` 1 對多 `scores`
+- `games` 1 對多 `scores`
+- `users` 與 `games` 透過 `scores` 建立多對多關係
+- `users` 1 對多 `announcements`（created_by）
+- `users` 1 對多 `announcements`（updated_by）
 
-- 一位使用者可以有多筆遊戲成績
-- 一款遊戲可以有多筆玩家成績
-- `scores` 表為 `users` 與 `games` 的關聯表
-- `announcements` 為獨立公告表
+可簡化表示為：
+
+users (1) ---- (N) scores (N) ---- (1) games
+
+users (1) ---- (N) announcements  [created_by]
+users (1) ---- (N) announcements  [updated_by]
 
 ---
 
