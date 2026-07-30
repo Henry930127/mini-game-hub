@@ -1,251 +1,166 @@
 # Mini Game Hub
 
-Mini Game Hub 是一個小型遊戲平台，玩家可以在線體驗多款簡單遊戲、提交分數並與其他玩家競爭排行榜。本系統同時提供後台管理系統，用於管理玩家、遊戲內容、分數紀錄以及平台公告。
+Mini Game Hub 是使用 Vue 3 與 Firebase 製作的小型線上遊戲平台。玩家可以註冊帳號、遊玩遊戲、提交成績及查看排行榜；管理員可以管理玩家、成績、遊戲內容與公告。
 
----
+## 線上網站
 
-# 專案簡介
+- 網站：https://mini-game-hub-0127.web.app
+- 管理員登入：https://mini-game-hub-0127.web.app/admin/login
+- Firebase Project ID：`mini-game-hub-0127`
 
-Mini Game Hub 是一個包含 **前台遊戲平台** 與 **後台管理系統** 的 Web 應用。
+## 功能
 
-玩家可以：
-- 註冊與登入帳號
-- 遊玩多款小遊戲
+### 玩家功能
+
+- Email／Password 註冊與登入
+- 遊玩五款小遊戲
 - 提交遊戲成績
-- 查看排行榜
-- 查看最新公告
-- 查看個人成績紀錄
+- 查看各遊戲排行榜
+- 查看個人統計與歷史紀錄
+- 查看平台公告
 
-管理員可以透過後台：
-- 管理玩家帳號
-- 管理遊戲資料
-- 管理分數紀錄
-- 發布平台公告
+### 管理員功能
 
----
+- Dashboard 統計摘要
+- 查看玩家列表
+- 查看及刪除成績
+- 編輯遊戲顯示內容與規則
+- 新增、編輯、啟用、停用及刪除公告
 
-# 系統功能
+### 遊戲列表
 
-## 會員系統
-
-- 使用者註冊
-- 使用者登入
-- 個人資料頁
-- 個人成績紀錄
-
----
-
-## 遊戲系統
-
-目前包含以下遊戲：
-
-| 遊戲名稱 | 說明 |
-|------|------|
+| 遊戲 | 說明 |
+|---|---|
 | Reaction Test | 測試玩家反應速度 |
-| Catch Items | 接住掉落的物品獲得分數 |
+| Catch Items | 接住掉落物品以獲得分數 |
 | Snake | 經典貪食蛇遊戲 |
 | Bee Shooter | 小蜜蜂射擊遊戲 |
-| Wordle | 猜單字遊戲 |
+| Wordle | 五字母英文單字猜謎 |
 
-功能包含：
+## Production 架構
 
-- 遊戲詳情頁
-- 遊戲操作說明
-- 遊戲排行榜
-- 成績提交
+本專案目前採用 Firebase 無自建伺服器架構：
 
----
+```text
+Browser
+  └─ Vue 3 application
+       ├─ Firebase Authentication
+       ├─ Cloud Firestore
+       └─ Firestore Security Rules
 
-## 排行榜系統
+Firebase Hosting
+  └─ frontend/dist
+```
 
-- 各遊戲排行榜
-- 玩家成績紀錄
-- 排名預覽
-- 即時更新排行榜
+| 功能 | 使用服務 |
+|---|---|
+| 前端框架 | Vue 3、Vue Router、Vite |
+| 網站託管 | Firebase Hosting |
+| 帳號註冊與登入 | Firebase Authentication |
+| 資料儲存 | Cloud Firestore |
+| 使用者與管理員授權 | Firestore Security Rules |
 
----
+Production 不會啟動 Express Server，也不會連接 MySQL。Repository 內的 `backend/` 是遷移前的 Express + MySQL 舊版程式碼，僅保留作為參考，不會被 Firebase 部署或執行。
 
-## 公告系統
+## Firestore 資料模型
 
-首頁會顯示最新公告，管理員可以在後台：
+### `users/{uid}`
 
-- 新增公告
-- 編輯公告
-- 啟用 / 停用公告
-- 刪除公告
-
----
-
-## 後台管理系統
-
-管理員登入後可以使用後台管理功能：
-
-### Admin Dashboard
-提供平台基本統計資訊，例如：
-
-- 玩家數量
-- 總遊戲數
-- 分數紀錄數
-- 最新玩家
-
----
-
-### 玩家管理
-
-功能：
-
-- 查看所有玩家
-- 查看註冊時間
-- 管理玩家資料
-
----
-
-### 分數管理
-
-功能：
-
-- 查看所有遊戲分數
-- 查看玩家紀錄
-- 刪除分數
-
----
-
-### 遊戲管理
-
-管理遊戲顯示內容，例如：
-
-- 遊戲名稱
-- 遊戲簡短介紹
-- 操作說明
-- 遊戲規則
-
-修改後會即時反映在前台。
-
----
-
-### 公告管理
-
-管理首頁公告：
-
-- 新增公告
-- 編輯公告
-- 啟用 / 停用公告
-- 刪除公告
-
----
-
-# 技術架構
-
-## Frontend
-
-- Vue 3
-- Vue Router
-- Firebase Web SDK
-- CSS
-
----
-
-## Firebase Services
-
-- Firebase Authentication：Email / Password 註冊與登入
-- Cloud Firestore：使用者、遊戲、分數與公告資料
-- Firestore Security Rules：使用者與管理員權限控制
-- Firebase Hosting：Vue SPA 靜態網站與路由 rewrite
-
----
-
-## Production Backend
-
-正式環境沒有另外部署 Express Server。瀏覽器透過 Firebase Web SDK 直接使用：
-
-- Firebase Authentication 處理帳號密碼與登入狀態
-- Cloud Firestore 處理資料讀寫
-- Firestore Security Rules 在伺服器端驗證資料存取權限
-
-Repository 中的 `backend/` 是遷移前的 Express + MySQL 舊版實作，僅供參考，
-Firebase production 網站不會執行或部署該目錄。
-
----
-
-## Firestore 資料設計
-
-系統主要包含以下四個 Collections：
-
-### users
-Document ID 使用 Firebase Authentication UID，並透過 `role` 區分玩家與管理員。
+使用 Firebase Authentication UID 作為 Document ID。
 
 | 欄位 | 說明 |
-|------|------|
-| id | Firebase Authentication UID |
-| username | 使用者名稱 |
-| email | Email |
-| role | 使用者角色（player / admin） |
-| created_at | 建立時間 |
+|---|---|
+| `id` | Firebase Authentication UID |
+| `username` | 使用者名稱 |
+| `email` | Email |
+| `role` | `player` 或 `admin` |
+| `created_at` | 建立時間 |
 
----
+### `games/{gameId}`
 
-### games
-儲存管理員覆寫的遊戲顯示內容；沒有 Firestore 資料時會使用前端內建遊戲資料。
-
-| 欄位 | 說明 |
-|------|------|
-| id | 遊戲 ID |
-| name | 系統內部名稱 |
-| slug | 路由識別碼 |
-| description | 基本描述 |
-| display_name | 前端顯示名稱 |
-| short_description | 簡短介紹 |
-| instructions | 操作提示 |
-| rules_text | 規則說明 |
-
----
-
-### scores
-記錄玩家在各遊戲中的分數資料。
+儲存管理員編輯的遊戲顯示內容。若沒有對應文件，網站會使用前端內建的預設遊戲資料。
 
 | 欄位 | 說明 |
-|------|------|
-| id | Firestore Document ID |
-| user_id | Firebase Authentication UID |
-| username | 提交分數時的玩家名稱 |
-| game_id | 遊戲 ID |
-| game_name | 遊戲名稱 |
-| slug | 遊戲路由識別碼 |
-| score | 分數 |
-| created_at | 建立時間 |
+|---|---|
+| `id` | 遊戲數字 ID |
+| `display_name` | 顯示名稱 |
+| `short_description` | 簡短介紹 |
+| `instructions` | 操作說明 |
+| `rules_text` | 遊戲規則 |
+| `updated_at` | 更新時間 |
 
----
-
-### announcements
-儲存首頁公告與後台公告管理資料。
+### `scores/{scoreId}`
 
 | 欄位 | 說明 |
-|------|------|
-| id | 公告 ID |
-| title | 公告標題 |
-| content | 公告內容 |
-| is_active | 是否啟用 |
-| created_by | 建立者 UID |
-| updated_by | 最後更新者 UID |
-| created_at | 建立時間 |
-| updated_at | 更新時間 |
+|---|---|
+| `user_id` | 玩家 UID |
+| `username` | 玩家名稱 |
+| `game_id` | 遊戲 ID |
+| `game_name` | 遊戲名稱 |
+| `slug` | 遊戲路由識別碼 |
+| `score` | 分數 |
+| `created_at` | 建立時間 |
 
----
+### `announcements/{announcementId}`
 
-# 安裝與執行
+| 欄位 | 說明 |
+|---|---|
+| `title` | 公告標題 |
+| `content` | 公告內容 |
+| `is_active` | 是否在前台顯示 |
+| `created_by` | 建立者 UID |
+| `updated_by` | 最後更新者 UID |
+| `created_at` | 建立時間 |
+| `updated_at` | 更新時間 |
 
-## 線上版本
+## 權限設計
 
-- Production URL：https://mini-game-hub-0127.web.app
-- Firebase Project ID：`mini-game-hub-0127`
-- Hosting：Firebase Hosting
-- Authentication：Email / Password
-- Database：Cloud Firestore Standard 免費層
-- Firestore Location：`nam5`
+`firestore.rules` 主要限制如下：
 
-正式環境不需要啟動 `backend` 或 MySQL。
+- 使用者只能建立及讀取自己的帳號資料。
+- 一般使用者不能自行將 `role` 改成 `admin`。
+- 登入者只能使用自己的 UID 提交成績。
+- 所有人可以讀取遊戲、排行榜與已啟用公告。
+- 只有管理員可以管理遊戲、公告及刪除成績。
 
-## 本機環境設定
+## 專案結構
+
+```text
+mini-game-hub/
+├─ frontend/                  # Vue 3 application
+│  ├─ src/
+│  │  ├─ api/                # Firestore / Authentication 資料存取
+│  │  ├─ components/         # 共用元件與遊戲元件
+│  │  ├─ data/               # 遊戲預設資料
+│  │  ├─ router/             # Vue Router
+│  │  ├─ views/              # 頁面
+│  │  └─ firebase.js         # Firebase SDK 初始化
+│  ├─ .env.example           # Firebase 環境變數範例
+│  └─ package.json
+├─ backend/                   # 遷移前的 Express + MySQL 舊版程式碼
+├─ firebase.json             # Hosting、Auth、Firestore 部署設定
+├─ firestore.rules           # Firestore Security Rules
+├─ firestore.indexes.json    # Firestore Indexes
+└─ .firebaserc               # Firebase Project 綁定
+```
+
+## 本機開發
+
+### 需求
+
+- Node.js 20 或更新版本
+- npm
+- Firebase CLI
+
+### 安裝
+
+```bash
+git clone https://github.com/Henry930127/mini-game-hub.git
+cd mini-game-hub/frontend
+npm install
+```
+
+### Firebase 環境變數
 
 將 `frontend/.env.example` 複製為 `frontend/.env`，填入 Firebase Web App 設定：
 
@@ -258,65 +173,70 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 VITE_FIREBASE_APP_ID=your-app-id
 ```
 
-安裝並啟動前端：
+`frontend/.env` 已被 Git 忽略，不會提交至 Repository。
+
+### 啟動
 
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
 
-## 部署
+Vite 預設開發網址為 `http://localhost:5173`。
+
+## 建置與部署
+
+### 建置
 
 ```bash
 cd frontend
 npm run build
-cd ..
+```
+
+建置結果會輸出至 `frontend/dist`。
+
+### 部署 Firebase
+
+```bash
 firebase login
 firebase deploy
 ```
 
-`firebase.json` 會部署 Authentication provider、Firestore Rules、Firestore Indexes
-與 `frontend/dist` Hosting 內容。
+`firebase deploy` 會部署：
 
-## 管理員設定
+- Email／Password Authentication provider
+- Firestore Security Rules
+- Firestore Indexes
+- Firebase Hosting 網站
 
-1. 先在網站註冊帳號。
-2. 到 Firebase Console → Firestore Database → `users`。
-3. 找到該帳號 UID 的文件。
-4. 將 `role` 從 `player` 改成 `admin`。
-5. 登出後前往 `/admin/login` 重新登入。
+## 設定管理員
 
-管理員登入網址：https://mini-game-hub-0127.web.app/admin/login
+基於安全考量，前台不能自行建立管理員。
 
-一般使用者無法透過網站或 Firestore Client SDK 自行升級權限。
+1. 在網站註冊帳號。
+2. 開啟 Firebase Console。
+3. 前往 Firestore Database → `users`。
+4. 找到該帳號 UID 的文件。
+5. 將 `role` 從 `player` 改為 `admin`。
+6. 回到網站登出。
+7. 前往 `/admin/login`，使用相同 Email 與密碼重新登入。
 
-## Clone 專案
+## 免費方案說明
 
-```bash
-git clone https://github.com/Henry930127/mini-game-hub.git
-```
+本專案使用 Firebase Spark 免費方案可使用的 Hosting、Authentication 與 Firestore 額度，不使用 Cloud Run、Cloud Functions 或 Cloud SQL。
 
----
+目前 Firestore `(default)` database：
 
-# 系統畫面
+- Edition：Standard
+- Location：`nam5`
+- Free tier：啟用
 
-### 首頁
-- 公告
-- 熱門遊戲
-- 排行榜預覽
-- 會員頁面
+若未來資料量或流量超過 Spark 免費額度，Firebase 可能暫停對應服務，或需要升級至 Blaze 計費方案。
 
-### 遊戲頁
-- 遊戲畫面
-- 操作說明
-- 排行榜
+## 注意事項
 
-### 後台管理
-- Dashboard
-- 玩家管理
-- 分數管理
-- 遊戲管理
-- 公告管理
-
----
+- 舊 MySQL 帳號、分數及公告不會自動出現在 Firestore。
+- 舊使用者需要在 Firebase 版本重新註冊。
+- `backend/` 的修改不會影響正式 Firebase 網站。
+- 排行榜與個人統計目前在前端計算，適合小型作品與低資料量情境。
+- 純前端遊戲無法完全防止竄改成績；若需要可信任的伺服器驗證，需加入 Cloud Functions 或其他後端服務。
