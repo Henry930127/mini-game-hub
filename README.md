@@ -60,7 +60,7 @@ Firebase Hosting
 | 資料儲存 | Cloud Firestore |
 | 使用者與管理員授權 | Firestore Security Rules |
 
-Production 不會啟動 Express Server，也不會連接 MySQL。Repository 內的 `backend/` 是遷移前的 Express + MySQL 舊版程式碼，僅保留作為參考，不會被 Firebase 部署或執行。
+Production 不會啟動 Express Server，也不會連接 MySQL。Repository 內的 `legacy/backend/` 是遷移前的 Express + MySQL 舊版程式碼，僅保留作為參考，不會被 Firebase 部署或執行。
 
 ## Firestore 資料模型
 
@@ -137,7 +137,8 @@ mini-game-hub/
 │  │  └─ firebase.js         # Firebase SDK 初始化
 │  ├─ .env.example           # Firebase 環境變數範例
 │  └─ package.json
-├─ backend/                   # 遷移前的 Express + MySQL 舊版程式碼
+├─ legacy/
+│  └─ backend/               # 遷移前的 Express + MySQL 封存程式碼
 ├─ firebase.json             # Hosting、Auth、Firestore 部署設定
 ├─ firestore.rules           # Firestore Security Rules
 ├─ firestore.indexes.json    # Firestore Indexes
@@ -237,6 +238,6 @@ firebase deploy
 
 - 舊 MySQL 帳號、分數及公告不會自動出現在 Firestore。
 - 舊使用者需要在 Firebase 版本重新註冊。
-- `backend/` 的修改不會影響正式 Firebase 網站。
+- `legacy/backend/` 的修改不會影響正式 Firebase 網站。
 - 排行榜與個人統計目前在前端計算，適合小型作品與低資料量情境。
 - 純前端遊戲無法完全防止竄改成績；若需要可信任的伺服器驗證，需加入 Cloud Functions 或其他後端服務。
