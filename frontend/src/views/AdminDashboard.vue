@@ -104,6 +104,7 @@
 
 <script>
 import { fetchAdminDashboard } from "../api/admin"
+import { logoutUser } from "../api/auth"
 
 export default {
   name: "AdminDashboard",
@@ -168,8 +169,11 @@ export default {
       })
     },
 
-    logout() {
+    async logout() {
+      await logoutUser()
       localStorage.removeItem("adminUser")
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
       this.$router.push("/admin/login")
     }
   }

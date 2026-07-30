@@ -1,31 +1,70 @@
-import api from "./client"
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  serverTimestamp,
+  setDoc
+} from "firebase/firestore"
+import { authReady, db } from "../firebase"
+import { fetchAllGames } from "./game"
+import { mapDocument } from "./firestoreUtils"
+
+const newestFirst = (a, b) => new Date(b.created_at) - new Date(a.created_at)
 
 export const fetchAdminDashboard = async () => {
-  const response = await api.get("/admin/dashboard")
-  return response.data
+  await authReady
+  const [usersData, scoresData, gamesData] = await Promise.all([
+    fetchAdminUsers(),
+    fetchAdminScores(),
+    fetchAllGames()
+  ])
+
+  return {
+    stats: {
+      totalUsers: usersData.users.length,
+      totalGames: gamesData.games.length,
+      totalScores: scoresData.scores.length
+    },
+    latestUsers: usersData.users.slice(0, 5),
+    latestScores: scoresData.scores.slice(0, 5)
+  }
 }
 
 export const fetchAdminUsers = async () => {
-  const response = await api.get("/admin/users")
-  return response.data
+  await authReady
+  const snapshot = await getDocs(collection(db, "users"))
+  return {
+    users: snapshot.docs.map(mapDocument).sort(newestFirst)
+  }
 }
 
 export const fetchAdminScores = async () => {
-  const response = await api.get("/admin/scores")
-  return response.data
+  await authReady
+  const snapshot = await getDocs(collection(db, "scores"))
+  return {
+    scores: snapshot.docs.map(mapDocument).sort(newestFirst)
+  }
 }
 
 export const deleteAdminScore = async (scoreId) => {
-  const response = await api.delete(`/admin/scores/${scoreId}`)
-  return response.data
+  await authReady
+  await deleteDoc(doc(db, "scores", String(scoreId)))
+  return { message: "Score deleted successfully" }
 }
 
 export const fetchAdminGames = async () => {
-  const response = await api.get("/admin/games")
-  return response.data
+  await authReady
+  return fetchAllGames()
 }
 
 export const updateAdminGame = async (gameId, payload) => {
-  const response = await api.put(`/admin/games/${gameId}`, payload)
-  return response.data
+  await authReady
+  await setDoc(doc(db, "games", String(gameId)), {
+    id: Number(gameId),
+    ...payload,
+    updated_at: serverTimestamp()
+  }, { merge: true })
+
+  return { message: "Game updated successfully" }
 }

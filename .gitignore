@@ -3,3 +3,5 @@ dist
 .env
 .DS_Store
 .vscode
+.firebase
+firebase-debug.log
