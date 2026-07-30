@@ -263,6 +263,7 @@ git clone https://github.com/Henry930127/minigamehub.git
   `DB_PASSWORD=yourpassword`
   `DB_NAME=minigamehub`
   `JWT_SECRET=your_secret_key`
+  `CORS_ORIGIN=http://localhost:5173`
 ---
 啟動後端
 - cd backend

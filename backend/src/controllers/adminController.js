@@ -55,8 +55,7 @@ const getDashboardSummary = async (req, res) => {
   } catch (error) {
     console.error('Get admin dashboard summary error:', error)
     res.status(500).json({
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     })
   }
 }

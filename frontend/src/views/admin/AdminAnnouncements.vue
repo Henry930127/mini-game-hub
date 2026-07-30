@@ -100,7 +100,7 @@
 
 <script>
 import {
-  fetchAnnouncements,
+  fetchAdminAnnouncements,
   createAnnouncement,
   updateAnnouncement,
   deleteAnnouncement
@@ -125,7 +125,7 @@ export default {
   methods: {
     async load() {
       try {
-        const data = await fetchAnnouncements()
+        const data = await fetchAdminAnnouncements()
         this.announcements = data.announcements || []
       } catch (error) {
         console.error("Load announcements failed:", error)
