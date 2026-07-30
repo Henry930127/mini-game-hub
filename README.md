@@ -140,52 +140,52 @@ Mini Game Hub 是一個包含 **前台遊戲平台** 與 **後台管理系統** 
 
 - Vue 3
 - Vue Router
-- Axios
+- Firebase Web SDK
 - CSS
 
 ---
 
-## Backend
+## Firebase Services
 
-- Node.js
-- Express.js
-- RESTful API
-
----
-
-## Database
-
-- MySQL
-
-主要資料表：
-- users ---> 存取玩家註冊資訊
-- games ---->存取遊戲資訊
-- scores -----> 存取玩家遊玩紀錄與分數
-- announcements ------> 存取公告資料與發佈紀錄
-
+- Firebase Authentication：Email / Password 註冊與登入
+- Cloud Firestore：使用者、遊戲、分數與公告資料
+- Firestore Security Rules：使用者與管理員權限控制
+- Firebase Hosting：Vue SPA 靜態網站與路由 rewrite
 
 ---
 
-## 資料庫設計
+## Production Backend
 
-系統主要包含以下四個核心資料表：
+正式環境沒有另外部署 Express Server。瀏覽器透過 Firebase Web SDK 直接使用：
+
+- Firebase Authentication 處理帳號密碼與登入狀態
+- Cloud Firestore 處理資料讀寫
+- Firestore Security Rules 在伺服器端驗證資料存取權限
+
+Repository 中的 `backend/` 是遷移前的 Express + MySQL 舊版實作，僅供參考，
+Firebase production 網站不會執行或部署該目錄。
+
+---
+
+## Firestore 資料設計
+
+系統主要包含以下四個 Collections：
 
 ### users
-儲存所有登入使用者資料，並透過 `role` 欄位區分一般玩家與管理員。
+Document ID 使用 Firebase Authentication UID，並透過 `role` 區分玩家與管理員。
 
 | 欄位 | 說明 |
 |------|------|
-| id | 使用者 ID |
+| id | Firebase Authentication UID |
 | username | 使用者名稱 |
 | email | Email |
-| password | 加密後密碼 |
 | role | 使用者角色（player / admin） |
 | created_at | 建立時間 |
 
 ---
 
 ### games
-儲存遊戲基本資料與前端顯示內容。
+儲存管理員覆寫的遊戲顯示內容；沒有 Firestore 資料時會使用前端內建遊戲資料。
 
 | 欄位 | 說明 |
 |------|------|
@@ -205,9 +205,12 @@ Mini Game Hub 是一個包含 **前台遊戲平台** 與 **後台管理系統** 
 
 | 欄位 | 說明 |
 |------|------|
-| id | 分數紀錄 ID |
-| user_id | 玩家 ID（FK -> users.id） |
-| game_id | 遊戲 ID（FK -> games.id） |
+| id | Firestore Document ID |
+| user_id | Firebase Authentication UID |
+| username | 提交分數時的玩家名稱 |
+| game_id | 遊戲 ID |
+| game_name | 遊戲名稱 |
+| slug | 遊戲路由識別碼 |
 | score | 分數 |
 | created_at | 建立時間 |
 
@@ -222,42 +225,29 @@ Mini Game Hub 是一個包含 **前台遊戲平台** 與 **後台管理系統** 
 | title | 公告標題 |
 | content | 公告內容 |
 | is_active | 是否啟用 |
-| created_by | 建立者（FK -> users.id） |
-| updated_by | 最後更新者（FK -> users.id） |
+| created_by | 建立者 UID |
+| updated_by | 最後更新者 UID |
 | created_at | 建立時間 |
 | updated_at | 更新時間 |
----
-
-## 資料表關係
-
-本系統的主要資料表關係如下：
-
-- `users` 1 對多 `scores`
-- `games` 1 對多 `scores`
-- `users` 與 `games` 透過 `scores` 建立多對多關係
-- `users` 1 對多 `announcements`（created_by）
-- `users` 1 對多 `announcements`（updated_by）
-
-可簡化表示為：
-
-users (1) ---- (N) scores (N) ---- (1) games
-
-users (1) ---- (N) announcements  [created_by]
-users (1) ---- (N) announcements  [updated_by]
 
 ---
 
 # 安裝與執行
 
-## Firebase 免費部署版本
+## 線上版本
 
-目前前端使用 Firebase Authentication、Cloud Firestore 與 Firebase Hosting，
-不需要啟動 `backend` 或 MySQL。
+- Production URL：https://mini-game-hub-0127.web.app
+- Firebase Project ID：`mini-game-hub-0127`
+- Hosting：Firebase Hosting
+- Authentication：Email / Password
+- Database：Cloud Firestore Standard 免費層
+- Firestore Location：`nam5`
 
-1. 在 Firebase Console 建立專案。
-2. 啟用 Authentication 的 Email/Password 登入方式。
-3. 建立 Cloud Firestore database。
-4. 在專案設定新增 Web App，將設定值複製到 `frontend/.env`：
+正式環境不需要啟動 `backend` 或 MySQL。
+
+## 本機環境設定
+
+將 `frontend/.env.example` 複製為 `frontend/.env`，填入 Firebase Web App 設定：
 
 ```env
 VITE_FIREBASE_API_KEY=your-api-key
@@ -268,45 +258,44 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 VITE_FIREBASE_APP_ID=your-app-id
 ```
 
-5. 安裝與部署：
+安裝並啟動前端：
 
 ```bash
 cd frontend
 npm install
+npm run dev
+```
+
+## 部署
+
+```bash
+cd frontend
 npm run build
 cd ..
 firebase login
-firebase use --add
 firebase deploy
 ```
 
-若要設定管理員，先透過網站註冊帳號，再到 Firestore Console 將
-`users/{uid}` 文件的 `role` 從 `player` 改為 `admin`。一般使用者無法透過網站自行升級權限。
+`firebase.json` 會部署 Authentication provider、Firestore Rules、Firestore Indexes
+與 `frontend/dist` Hosting 內容。
+
+## 管理員設定
+
+1. 先在網站註冊帳號。
+2. 到 Firebase Console → Firestore Database → `users`。
+3. 找到該帳號 UID 的文件。
+4. 將 `role` 從 `player` 改成 `admin`。
+5. 登出後前往 `/admin/login` 重新登入。
+
+管理員登入網址：https://mini-game-hub-0127.web.app/admin/login
+
+一般使用者無法透過網站或 Firestore Client SDK 自行升級權限。
 
 ## Clone 專案
-git clone https://github.com/Henry930127/minigamehub.git
----
 
-## 安裝後端
-- cd backend
-- npm install
-- 建立 `.env`
-  `PORT=5000`
-  `DB_HOST=localhost`
-  `DB_USER=root`
-  `DB_PASSWORD=yourpassword`
-  `DB_NAME=minigamehub`
-  `JWT_SECRET=your_secret_key`
-  `CORS_ORIGIN=http://localhost:5173`
----
-啟動後端
-- cd backend
-- npm run dev
----
-## 安裝前端
-- cd frontend
-- npm install
-- npm run dev
+```bash
+git clone https://github.com/Henry930127/mini-game-hub.git
+```
 
 ---
 
