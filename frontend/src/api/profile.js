@@ -1,8 +1,6 @@
-import axios from 'axios'
-
-const API_BASE_URL = 'http://localhost:5000/api'
+import api from './client'
 
 export const fetchProfileSummary = async (userId) => {
-  const response = await axios.get(`${API_BASE_URL}/profile/${userId}`)
+  const response = await api.get(`/profile/${userId}`)
   return response.data
 }

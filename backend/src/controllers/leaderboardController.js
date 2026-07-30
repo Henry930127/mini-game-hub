@@ -3,6 +3,13 @@ const db = require('../config/db')
 const getLeaderboard = async (req, res) => {
   try {
     const { gameId } = req.params
+    const numericGameId = Number(gameId)
+
+    if (!Number.isInteger(numericGameId) || numericGameId <= 0) {
+      return res.status(400).json({
+        message: 'Invalid game ID'
+      })
+    }
 
     const [rows] = await db.query(
       `
@@ -16,11 +23,11 @@ const getLeaderboard = async (req, res) => {
       ORDER BY scores.score DESC
       LIMIT 10
       `,
-      [gameId]
+      [numericGameId]
     )
 
     res.json({
-      gameId,
+      gameId: numericGameId,
       leaderboard: rows
     })
 
@@ -28,8 +35,7 @@ const getLeaderboard = async (req, res) => {
     console.error('Leaderboard error:', error)
 
     res.status(500).json({
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     })
   }
 }

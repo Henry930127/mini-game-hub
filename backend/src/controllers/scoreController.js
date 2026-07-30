@@ -2,17 +2,25 @@ const db = require('../config/db')
 
 const submitScore = async (req, res) => {
   try {
-    const { user_id, game_id, score } = req.body
+    const { game_id, score } = req.body
+    const userId = req.user.id
+    const gameId = Number(game_id)
+    const numericScore = Number(score)
 
-    if (!user_id || !game_id || score === undefined) {
+    if (
+      !Number.isInteger(gameId) ||
+      gameId <= 0 ||
+      !Number.isInteger(numericScore) ||
+      numericScore < 0
+    ) {
       return res.status(400).json({
-        message: 'user_id, game_id and score are required'
+        message: 'game_id and score must be valid non-negative integers'
       })
     }
 
     const [result] = await db.query(
       'INSERT INTO scores (user_id, game_id, score) VALUES (?, ?, ?)',
-      [user_id, game_id, score]
+      [userId, gameId, numericScore]
     )
 
     res.status(201).json({
@@ -23,8 +31,7 @@ const submitScore = async (req, res) => {
   } catch (error) {
     console.error('Submit score error:', error)
     res.status(500).json({
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     })
   }
 }

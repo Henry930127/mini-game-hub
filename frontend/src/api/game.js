@@ -1,8 +1,6 @@
-import axios from "axios"
-
-const API_BASE = "http://localhost:5000/api"
+import api from "./client"
 
 export const fetchAllGames = async () => {
-  const response = await axios.get(`${API_BASE}/admin/games`)
+  const response = await api.get("/public/games")
   return response.data
 }

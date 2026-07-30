@@ -138,7 +138,7 @@
 
 <script>
 import { fetchLeaderboard } from "../api/leaderboard"
-import { fetchAnnouncements } from "../api/announcement"
+import { fetchPublicAnnouncements } from "../api/announcement"
 import { fetchAllGames } from "../api/game"
 import { games as localGames } from "../data/games"
 
@@ -210,7 +210,7 @@ export default {
     async loadAnnouncements() {
       try {
         this.loadingAnnouncements = true
-        const data = await fetchAnnouncements()
+        const data = await fetchPublicAnnouncements()
         this.announcements = data.announcements || []
       } catch (error) {
         console.error("Load announcements failed:", error)

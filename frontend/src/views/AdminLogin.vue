@@ -38,9 +38,7 @@
 </template>
 
 <script>
-import axios from "axios"
-
-const API_BASE = "http://localhost:5000/api"
+import api from "../api/client"
 
 export default {
   name: "AdminLogin",
@@ -65,7 +63,7 @@ export default {
       this.errorMessage = ""
 
       try {
-        const response = await axios.post(`${API_BASE}/auth/login`, {
+        const response = await api.post("/auth/login", {
           email: this.form.email,
           password: this.form.password
         })

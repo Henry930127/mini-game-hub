@@ -1,8 +1,6 @@
-import axios from 'axios'
-
-const API_BASE_URL = 'http://localhost:5000/api'
+import api from './client'
 
 export const fetchLeaderboard = async (gameId) => {
-  const response = await axios.get(`${API_BASE_URL}/leaderboard/${gameId}`)
+  const response = await api.get(`/leaderboard/${gameId}`)
   return response.data.leaderboard
 }

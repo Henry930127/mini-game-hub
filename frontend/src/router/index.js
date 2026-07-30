@@ -103,7 +103,21 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem("token")
-  const adminUser = localStorage.getItem("adminUser")
+  const savedAdminUser = localStorage.getItem("adminUser")
+  let isAdmin = false
+
+  if (token && savedAdminUser) {
+    try {
+      const adminUser = JSON.parse(savedAdminUser)
+      isAdmin = adminUser?.role === "admin"
+    } catch {
+      isAdmin = false
+    }
+  }
+
+  if (savedAdminUser && !isAdmin) {
+    localStorage.removeItem("adminUser")
+  }
 
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
@@ -113,7 +127,7 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  if (requiresAdmin && !adminUser) {
+  if (requiresAdmin && !isAdmin) {
     next("/admin/login")
     return
   }

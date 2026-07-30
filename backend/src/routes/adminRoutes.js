@@ -4,6 +4,17 @@ const db = require('../config/db')
 const { getDashboardSummary } = require('../controllers/adminController')
 const { authenticateToken, requireAdmin } = require('../middleware/authMiddleware')
 
+const parsePositiveId = value => {
+  const id = Number(value)
+  return Number.isInteger(id) && id > 0 ? id : null
+}
+
+const isValidText = (value, maxLength, allowEmpty = false) => (
+  typeof value === 'string' &&
+  value.length <= maxLength &&
+  (allowEmpty || value.trim().length > 0)
+)
+
 router.use(authenticateToken)
 router.use(requireAdmin)
 
@@ -51,7 +62,11 @@ router.get('/scores', async (req, res) => {
 
 router.delete('/scores/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const id = parsePositiveId(req.params.id)
+
+    if (!id) {
+      return res.status(400).json({ message: 'Invalid score ID' })
+    }
 
     const [result] = await db.query(
       'DELETE FROM scores WHERE id = ?',
@@ -94,13 +109,23 @@ router.get('/games', async (req, res) => {
 
 router.put('/games/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const id = parsePositiveId(req.params.id)
     const {
       display_name,
       short_description,
       instructions,
       rules_text
     } = req.body
+
+    if (
+      !id ||
+      !isValidText(display_name, 100) ||
+      !isValidText(short_description, 500, true) ||
+      !isValidText(instructions, 5000, true) ||
+      !isValidText(rules_text, 5000, true)
+    ) {
+      return res.status(400).json({ message: 'Invalid game data' })
+    }
 
     const [result] = await db.query(
       `
@@ -161,6 +186,14 @@ router.post('/announcements', async (req, res) => {
     const { title, content, is_active } = req.body
     const adminId = req.user.id
 
+    if (
+      !isValidText(title, 200) ||
+      !isValidText(content, 10000) ||
+      typeof is_active !== 'boolean'
+    ) {
+      return res.status(400).json({ message: 'Invalid announcement data' })
+    }
+
     const [result] = await db.query(
       `
       INSERT INTO announcements (title, content, is_active, created_by, updated_by)
@@ -183,9 +216,18 @@ router.post('/announcements', async (req, res) => {
 
 router.put('/announcements/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const id = parsePositiveId(req.params.id)
     const { title, content, is_active } = req.body
     const adminId = req.user.id
+
+    if (
+      !id ||
+      !isValidText(title, 200) ||
+      !isValidText(content, 10000) ||
+      typeof is_active !== 'boolean'
+    ) {
+      return res.status(400).json({ message: 'Invalid announcement data' })
+    }
 
     const [result] = await db.query(
       `
@@ -219,7 +261,11 @@ router.put('/announcements/:id', async (req, res) => {
 
 router.delete('/announcements/:id', async (req, res) => {
   try {
-    const { id } = req.params
+    const id = parsePositiveId(req.params.id)
+
+    if (!id) {
+      return res.status(400).json({ message: 'Invalid announcement ID' })
+    }
 
     const [result] = await db.query(
       `DELETE FROM announcements WHERE id = ?`,

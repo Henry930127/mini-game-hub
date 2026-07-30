@@ -3,10 +3,23 @@ const db = require('../config/db')
 const getProfileSummary = async (req, res) => {
   try {
     const { userId } = req.params
+    const requestedUserId = Number(userId)
+
+    if (!Number.isInteger(requestedUserId) || requestedUserId <= 0) {
+      return res.status(400).json({
+        message: 'Invalid user ID'
+      })
+    }
+
+    if (req.user.role !== 'admin' && req.user.id !== requestedUserId) {
+      return res.status(403).json({
+        message: 'You can only view your own profile'
+      })
+    }
 
     const [users] = await db.query(
       'SELECT id, username, email, role, created_at FROM users WHERE id = ?',
-      [userId]
+      [requestedUserId]
     )
 
     if (users.length === 0) {
@@ -26,7 +39,7 @@ const getProfileSummary = async (req, res) => {
       FROM scores
       WHERE user_id = ?
       `,
-      [userId]
+      [requestedUserId]
     )
 
     const stats = statsRows[0] || {
@@ -65,7 +78,7 @@ const getProfileSummary = async (req, res) => {
         ON g.id = user_best.game_id
       ORDER BY g.id ASC
       `,
-      [userId]
+      [requestedUserId]
     )
 
     const [recentHistoryRows] = await db.query(
@@ -82,7 +95,7 @@ const getProfileSummary = async (req, res) => {
       ORDER BY s.created_at DESC
       LIMIT 10
       `,
-      [userId]
+      [requestedUserId]
     )
 
     const bestRecords = bestRecordsRows.map(record => ({
@@ -116,8 +129,7 @@ const getProfileSummary = async (req, res) => {
   } catch (error) {
     console.error('Get profile summary error:', error)
     res.status(500).json({
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     })
   }
 }

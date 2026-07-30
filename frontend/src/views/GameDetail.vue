@@ -321,7 +321,6 @@ export default {
         this.submitScoreMessageType = "success"
 
         await submitScore({
-          user_id: userId,
           game_id: this.game.id,
           score: finalScore
         })
