@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import api from "../api/client"
+import { loginUser } from "../api/auth"
 
 export default {
   name: "AdminLogin",
@@ -63,12 +63,12 @@ export default {
       this.errorMessage = ""
 
       try {
-        const response = await api.post("/auth/login", {
+        const data = await loginUser({
           email: this.form.email,
           password: this.form.password
         })
 
-        const { token, user } = response.data
+        const { token, user } = data
 
         if (!user || user.role !== "admin") {
           this.errorMessage = "此帳號不是管理員，無法登入後台"

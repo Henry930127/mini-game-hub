@@ -24,6 +24,8 @@
 </template>
 
 <script>
+import { logoutUser } from "../api/auth"
+
 export default {
   name: "Navbar",
   data() {
@@ -42,9 +44,11 @@ export default {
       }
     },
 
-    handleLogout() {
+    async handleLogout() {
+      await logoutUser()
       localStorage.removeItem("token")
       localStorage.removeItem("user")
+      localStorage.removeItem("adminUser")
       this.currentUser = null
       this.$router.push("/login")
     },

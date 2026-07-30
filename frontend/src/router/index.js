@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router"
+import { auth, authReady } from "../firebase"
 
 import Home from "../views/Home.vue"
 import Game from "../views/Game.vue"
@@ -101,7 +102,8 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  await authReady
   const token = localStorage.getItem("token")
   const savedAdminUser = localStorage.getItem("adminUser")
   let isAdmin = false
@@ -122,12 +124,15 @@ router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
 
-  if (requiresAuth && !token) {
+  if (requiresAuth && (!token || !auth.currentUser)) {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
     next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
     return
   }
 
-  if (requiresAdmin && !isAdmin) {
+  if (requiresAdmin && (!auth.currentUser || !isAdmin)) {
+    localStorage.removeItem("adminUser")
     next("/admin/login")
     return
   }

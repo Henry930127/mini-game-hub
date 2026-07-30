@@ -249,6 +249,40 @@ users (1) ---- (N) announcements  [updated_by]
 
 # 安裝與執行
 
+## Firebase 免費部署版本
+
+目前前端使用 Firebase Authentication、Cloud Firestore 與 Firebase Hosting，
+不需要啟動 `backend` 或 MySQL。
+
+1. 在 Firebase Console 建立專案。
+2. 啟用 Authentication 的 Email/Password 登入方式。
+3. 建立 Cloud Firestore database。
+4. 在專案設定新增 Web App，將設定值複製到 `frontend/.env`：
+
+```env
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project-id.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+```
+
+5. 安裝與部署：
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+firebase login
+firebase use --add
+firebase deploy
+```
+
+若要設定管理員，先透過網站註冊帳號，再到 Firestore Console 將
+`users/{uid}` 文件的 `role` 從 `player` 改為 `admin`。一般使用者無法透過網站自行升級權限。
+
 ## Clone 專案
 git clone https://github.com/Henry930127/minigamehub.git
 ---

@@ -1,0 +1,66 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId)
+        && request.resource.data.id == userId
+        && request.resource.data.role == "player"
+        && request.resource.data.email == request.auth.token.email;
+      allow read: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.id == resource.data.id;
+      allow delete: if false;
+    }
+
+    match /games/{gameId} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.id is int
+        && request.resource.data.id > 0;
+      allow delete: if isAdmin();
+    }
+
+    match /scores/{scoreId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.username
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username
+        && request.resource.data.game_id is int
+        && request.resource.data.game_id > 0
+        && request.resource.data.game_id <= 5
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 1000000;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if resource.data.is_active == true || isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.created_by == request.auth.uid
+        && request.resource.data.updated_by == request.auth.uid;
+      allow update: if isAdmin()
+        && request.resource.data.created_by == resource.data.created_by
+        && request.resource.data.updated_by == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+  }
+}

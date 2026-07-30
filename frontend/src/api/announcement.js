@@ -1,26 +1,67 @@
-import api from "./client"
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where
+} from "firebase/firestore"
+import { auth, authReady, db } from "../firebase"
+import { mapDocument } from "./firestoreUtils"
 
 export const fetchPublicAnnouncements = async () => {
-  const res = await api.get("/public/announcements")
-  return res.data
+  const snapshot = await getDocs(query(
+    collection(db, "announcements"),
+    where("is_active", "==", true)
+  ))
+  const announcements = snapshot.docs
+    .map(mapDocument)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+  return { announcements }
 }
 
 export const fetchAdminAnnouncements = async () => {
-  const res = await api.get("/admin/announcements")
-  return res.data
+  await authReady
+  const snapshot = await getDocs(collection(db, "announcements"))
+  return {
+    announcements: snapshot.docs
+      .map(mapDocument)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  }
 }
 
 export const createAnnouncement = async (data) => {
-  const res = await api.post("/admin/announcements", data)
-  return res.data
+  await authReady
+  const result = await addDoc(collection(db, "announcements"), {
+    title: data.title.trim(),
+    content: data.content.trim(),
+    is_active: data.is_active === true,
+    created_by: auth.currentUser.uid,
+    updated_by: auth.currentUser.uid,
+    created_at: serverTimestamp(),
+    updated_at: serverTimestamp()
+  })
+  return { id: result.id, message: "announcement created" }
 }
 
 export const updateAnnouncement = async (id, data) => {
-  const res = await api.put(`/admin/announcements/${id}`, data)
-  return res.data
+  await authReady
+  await updateDoc(doc(db, "announcements", String(id)), {
+    title: data.title.trim(),
+    content: data.content.trim(),
+    is_active: data.is_active === true,
+    updated_by: auth.currentUser.uid,
+    updated_at: serverTimestamp()
+  })
+  return { message: "announcement updated" }
 }
 
 export const deleteAnnouncement = async (id) => {
-  const res = await api.delete(`/admin/announcements/${id}`)
-  return res.data
+  await authReady
+  await deleteDoc(doc(db, "announcements", String(id)))
+  return { message: "announcement deleted" }
 }
